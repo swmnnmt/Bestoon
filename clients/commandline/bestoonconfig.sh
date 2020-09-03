@@ -1,4 +1,4 @@
 #!/bin/bash
 
-TOKEN=test
+TOKEN=1234567
 BASE_URL=127.0.0.1:8000

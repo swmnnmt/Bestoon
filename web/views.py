@@ -2,7 +2,6 @@
 
 from json import JSONEncoder
 from datetime import datetime
-
 from django.core import serializers
 from django.conf import settings
 from django.shortcuts import render, get_object_or_404
@@ -15,12 +14,9 @@ from django.utils.crypto import get_random_string
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.hashers import make_password, check_password
 from django.views.decorators.http import require_POST
-
-from .models import User, Token, Expense, Income, PasswordResetCodes, News
-
+from .models import User, Token, Expense, Income, PasswordResetCodes
 # Create your views here.
 from postmark import PMMail
-
 from .utils import grecaptcha_verify, RateLimited
 
 # create random string for Toekn
@@ -28,13 +24,7 @@ random_str = lambda N: ''.join(
     random.SystemRandom().choice(string.ascii_uppercase + string.ascii_lowercase + string.digits) for _ in range(N))
 
 
-# login , (API) , returns : JSON = statuns (ok|error) and token
-
-
-
 # register (web)
-
-
 def register(request):
     if request.POST.has_key(
             'requestcode'):  # form is filled. if not spam, generate code and save in db, wait for email confirmation, return message
@@ -102,21 +92,12 @@ def register(request):
     else:
         context = {'message': ''}
         return render(request, 'register.html', context)
-
-
 # return username based on sent POST Token
 
-
-
 # homepage of System
-
-
 def index(request):
     context = {}
     return render(request, 'index.html', context)
-
-
-
 
 # submit an income to system (api) , input : token(POST) , output : status
 # = (ok)
@@ -139,7 +120,6 @@ def submit_income(request):
         'status': 'ok',
     }, encoder=JSONEncoder)
 
-
 # submit an expanse to system (api) , input : token(POST) , output :
 # status = (ok)
 @csrf_exempt
@@ -160,3 +140,16 @@ def submit_expense(request):
     return JsonResponse({
         'status': 'ok',
     }, encoder=JSONEncoder)  # return {'status':'ok'}
+
+
+@csrf_exempt
+@require_POST
+def generalstat(request):
+    this_token = request.POST['token']
+    this_user = User.objects.filter(token__token = this_token).get()
+    expense = Expense.objects.filter(user = this_user).aggregate(Count('amount'), Sum('amount'))
+    income = Income.objects.filter(user = this_user).aggregate(Count('amount'), Sum('amount'))
+    context = {}
+    context['expense'] = expense
+    context['income'] = income
+    return JsonResponse(context, encoder=JSONEncoder)
